@@ -9,6 +9,7 @@ type Document interface {
 	Id() string
 	EntityName() string
 	FromBson(sr *mongo.SingleResult) (Document, error)
+	IsUniqueID() bool
 }
 
 // ToBSON Convert document object to BSON
