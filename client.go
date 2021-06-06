@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/google/uuid"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
@@ -28,12 +29,13 @@ type Client interface {
 	HealthCheck() error
 	Persist(d Document) error
 	GetCollection(d Document) (*mongo.Collection, error)
-	FindOne(d Document, filters bson.M) (*Document, error)
-	FindOneById(d Document, id string) (*Document, error)
+	FindOne(d Document, filters bson.M) (Document, error)
+	FindOneById(d Document, id string) (Document, error)
 	ReplaceOrPersist(d Document) error
 	Replace(d Document) error
 	Delete(d Document) error
 	Update(d Document, update bson.M) error
+	GenerateUUID() string
 }
 
 type mongoClient struct {
@@ -94,6 +96,14 @@ func (m mongoClient) HealthCheck() error {
 }
 
 func (m mongoClient) Persist(d Document) error {
+	if d.IsUniqueID() {
+		_, err := m.FindOneById(d, d.Id())
+
+		if err == nil {
+			return errors.New(fmt.Sprintf("Document %s with ID %s already exists", d.EntityName(), d.Id()))
+		}
+	}
+
 	bsonObj, err := ToBSON(d)
 
 	if err != nil {
@@ -126,7 +136,7 @@ func (m mongoClient) GetCollection(d Document) (*mongo.Collection, error) {
 	return client.Database(m.Database).Collection(d.EntityName()), nil
 }
 
-func (m mongoClient) FindOne(d Document, filters bson.M) (*Document, error) {
+func (m mongoClient) FindOne(d Document, filters bson.M) (Document, error) {
 	ctx, cancel := m.getContext()
 	defer cancel()
 
@@ -146,16 +156,16 @@ func (m mongoClient) FindOne(d Document, filters bson.M) (*Document, error) {
 		return nil, doc.Err()
 	}
 
-	res, err := d.FromBson(doc)
+	result, err := d.FromBson(doc)
 
 	if err != nil {
 		return nil, err
 	}
 
-	return &res, nil
+	return result, nil
 }
 
-func (m mongoClient) FindOneById(d Document, id string) (*Document, error) {
+func (m mongoClient) FindOneById(d Document, id string) (Document, error) {
 	return m.FindOne(d, bson.M{"id": id})
 }
 
@@ -263,6 +273,10 @@ func (m mongoClient) Update(d Document, update bson.M) error {
 	_, err = collection.UpdateOne(ctx, filter, bson.M{"$set": update})
 
 	return err
+}
+
+func (m mongoClient) GenerateUUID() string {
+	return uuid.NewString()
 }
 
 func NewMongoClient(config ClientConfig) (Client, error) {
