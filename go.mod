@@ -1,4 +1,4 @@
-module bitbucket.org/polarstork/go-mongo
+module bitbucket.org/polarstork/mongo-go
 
 go 1.16
 
