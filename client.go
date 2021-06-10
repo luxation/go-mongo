@@ -34,7 +34,7 @@ type Client interface {
 	ReplaceOrPersist(d Document) error
 	Replace(d Document) error
 	Delete(d Document) error
-	Update(d Document, update bson.M) error
+	Update(d Document, id string, update bson.M) error
 	GenerateUUID() string
 }
 
@@ -100,9 +100,13 @@ func (m mongoClient) Persist(d Document) error {
 		_, err := m.FindOneById(d, d.Id())
 
 		if err == nil {
-			return errors.New(fmt.Sprintf("Document %s with ID %s already exists", d.EntityName(), d.Id()))
+			return errors.New(fmt.Sprintf("Document %s with ID %s already exists", d.DocumentName(), d.Id()))
 		}
 	}
+
+	//d.SetId(m.GenerateUUID())
+	d.SetCreatedAt()
+	d.SetUpdatedAt()
 
 	bsonObj, err := ToBSON(d)
 
@@ -120,7 +124,7 @@ func (m mongoClient) Persist(d Document) error {
 	}
 
 	if collection == nil {
-		return errors.New(fmt.Sprintf("No collection found for document named %s", d.EntityName()))
+		return errors.New(fmt.Sprintf("No collection found for document named %s", d.DocumentName()))
 	}
 
 	_, err = collection.InsertOne(ctx, bsonObj)
@@ -133,7 +137,7 @@ func (m mongoClient) GetCollection(d Document) (*mongo.Collection, error) {
 		return nil, errors.New("MongoDB client was not initialized")
 	}
 
-	return client.Database(m.Database).Collection(d.EntityName()), nil
+	return client.Database(m.Database).Collection(d.DocumentName()), nil
 }
 
 func (m mongoClient) FindOne(d Document, filters bson.M) (Document, error) {
@@ -147,7 +151,7 @@ func (m mongoClient) FindOne(d Document, filters bson.M) (Document, error) {
 	}
 
 	if collection == nil {
-		return nil, errors.New(fmt.Sprintf("No collection found for document named %s", d.EntityName()))
+		return nil, errors.New(fmt.Sprintf("No collection found for document named %s", d.DocumentName()))
 	}
 
 	doc := collection.FindOne(ctx, filters)
@@ -156,7 +160,7 @@ func (m mongoClient) FindOne(d Document, filters bson.M) (Document, error) {
 		return nil, doc.Err()
 	}
 
-	result, err := d.FromBson(doc)
+	result, err := d.FromBSON(doc)
 
 	if err != nil {
 		return nil, err
@@ -170,12 +174,6 @@ func (m mongoClient) FindOneById(d Document, id string) (Document, error) {
 }
 
 func (m mongoClient) ReplaceOrPersist(d Document) error {
-	bsonObj, err := ToBSON(d)
-
-	if err != nil {
-		return err
-	}
-
 	ctx, cancel := m.getContext()
 	defer cancel()
 
@@ -186,7 +184,16 @@ func (m mongoClient) ReplaceOrPersist(d Document) error {
 	}
 
 	if collection == nil {
-		return errors.New(fmt.Sprintf("No collection found for document named %s", d.EntityName()))
+		return errors.New(fmt.Sprintf("No collection found for document named %s", d.DocumentName()))
+	}
+
+	d.IncrementVersion()
+	d.SetUpdatedAt()
+
+	bsonObj, err := ToBSON(d)
+
+	if err != nil {
+		return err
 	}
 
 	filter := bson.M{"id": d.Id()}
@@ -201,12 +208,6 @@ func (m mongoClient) ReplaceOrPersist(d Document) error {
 }
 
 func (m mongoClient) Replace(d Document) error {
-	bsonObj, err := ToBSON(d)
-
-	if err != nil {
-		return err
-	}
-
 	ctx, cancel := m.getContext()
 	defer cancel()
 
@@ -217,7 +218,16 @@ func (m mongoClient) Replace(d Document) error {
 	}
 
 	if collection == nil {
-		return errors.New(fmt.Sprintf("No collection found for document named %s", d.EntityName()))
+		return errors.New(fmt.Sprintf("No collection found for document named %s", d.DocumentName()))
+	}
+
+	d.IncrementVersion()
+	d.SetUpdatedAt()
+
+	bsonObj, err := ToBSON(d)
+
+	if err != nil {
+		return err
 	}
 
 	filter := bson.M{"id": d.Id()}
@@ -236,7 +246,7 @@ func (m mongoClient) Delete(d Document) error {
 	}
 
 	if collection == nil {
-		return errors.New(fmt.Sprintf("No collection found for document named %s", d.EntityName()))
+		return errors.New(fmt.Sprintf("No collection found for document named %s", d.DocumentName()))
 	}
 
 	filter := bson.M{"id": d.Id()}
@@ -254,7 +264,7 @@ func (m mongoClient) Delete(d Document) error {
 	return nil
 }
 
-func (m mongoClient) Update(d Document, update bson.M) error {
+func (m mongoClient) Update(d Document, id string, update bson.M) error {
 	ctx, cancel := m.getContext()
 	defer cancel()
 
@@ -265,10 +275,10 @@ func (m mongoClient) Update(d Document, update bson.M) error {
 	}
 
 	if collection == nil {
-		return errors.New(fmt.Sprintf("No collection found for document named %s", d.EntityName()))
+		return errors.New(fmt.Sprintf("No collection found for document named %s", d.DocumentName()))
 	}
 
-	filter := bson.M{"id": d.Id()}
+	filter := bson.M{"id": id}
 
 	_, err = collection.UpdateOne(ctx, filter, bson.M{"$set": update})
 
