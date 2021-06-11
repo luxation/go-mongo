@@ -13,13 +13,7 @@ type Foo struct {
 	Action        string
 }
 
-func (f Foo) Id() string { return f.ID }
-
 func (f Foo) DocumentName() string { return "foo" }
-
-func (f Foo) IsUniqueID() bool {
-	return true
-}
 
 func (f Foo) FromBSON(sr *mongo.SingleResult) (Document, error) {
 	err := sr.Decode(&f)
