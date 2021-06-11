@@ -104,7 +104,7 @@ func (m mongoClient) Persist(d Document) error {
 		}
 	}
 
-	//d.SetId(m.GenerateUUID())
+	d.SetId(m.GenerateUUID())
 	d.SetCreatedAt()
 	d.SetUpdatedAt()
 
