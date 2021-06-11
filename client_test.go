@@ -15,14 +15,14 @@ type Foo struct {
 
 func (f Foo) DocumentName() string { return "foo" }
 
-func (f Foo) FromBSON(sr *mongo.SingleResult) (Document, error) {
-	err := sr.Decode(&f)
+func (f *Foo) FromBSON(sr *mongo.SingleResult) error {
+	err := sr.Decode(f)
 
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	return &f, nil
+	return nil
 }
 
 func dummyConnect() (Client, error) {
@@ -73,11 +73,14 @@ func TestInsertFoo(t *testing.T) {
 func TestFindOneByID(t *testing.T) {
 	assert.NotNil(t, testClient)
 
-	result, err := testClient.FindOneById(&Foo{}, "foo-bar-1")
+	foo := Foo{}
+
+	err := testClient.FindOneById(&foo, "foo-bar-1")
 
 	assert.Nil(t, err)
-	assert.NotNil(t, result)
-	assert.Equal(t, "foo-bar-1", result.Id())
+	assert.NotNil(t, foo)
+	assert.Equal(t, "foo-bar-1", foo.Id())
+	assert.Equal(t, "Bar", foo.Action)
 }
 
 func TestReplaceOrPersistReplace(t *testing.T) {
@@ -113,11 +116,13 @@ func TestReplaceOrPersistPersist(t *testing.T) {
 func TestFindOneByIDNewlyPersisted(t *testing.T) {
 	assert.NotNil(t, testClient)
 
-	result, err := testClient.FindOneById(&Foo{}, "foo-bar-2")
+	foo := Foo{}
+
+	err := testClient.FindOneById(&foo, "foo-bar-2")
 
 	assert.Nil(t, err)
-	assert.NotNil(t, result)
-	assert.Equal(t, "foo-bar-2", result.Id())
+	assert.NotNil(t, foo)
+	assert.Equal(t, "foo-bar-2", foo.Id())
 }
 
 func TestDelete(t *testing.T) {
@@ -138,14 +143,16 @@ func TestDelete(t *testing.T) {
 func TestUpdate(t *testing.T) {
 	assert.NotNil(t, testClient)
 
-	result, err := testClient.FindOneById(&Foo{}, "foo-bar-1")
+	foo := Foo{}
+
+	err := testClient.FindOneById(&foo, "foo-bar-1")
 
 	assert.Nil(t, err)
 
-	result.IncrementVersion()
-	result.SetUpdatedAt()
+	foo.IncrementVersion()
+	foo.SetUpdatedAt()
 
-	err = testClient.Update(result, "foo-bar-1", bson.M{"action": "updated bar with update method"})
+	err = testClient.Update(&foo, "foo-bar-1", bson.M{"action": "updated bar with update method"})
 
 	assert.Nil(t, err)
 }

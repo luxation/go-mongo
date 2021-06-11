@@ -16,14 +16,14 @@ func (f FooDocument) DocumentName() string {
 	return "foo"
 }
 
-func (f FooDocument) FromBSON(sr *mongo.SingleResult) (Document, error) {
+func (f *FooDocument) FromBSON(sr *mongo.SingleResult) error {
 	err := sr.Decode(&f)
 
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	return &f, nil
+	return nil
 }
 
 func TestCorrectInheritedType(t *testing.T) {

@@ -29,8 +29,8 @@ type Client interface {
 	HealthCheck() error
 	Persist(d Document) error
 	GetCollection(d Document) (*mongo.Collection, error)
-	FindOne(d Document, filters bson.M) (Document, error)
-	FindOneById(d Document, id string) (Document, error)
+	FindOne(d Document, filters bson.M) error
+	FindOneById(d Document, id string) error
 	ReplaceOrPersist(d Document) error
 	Replace(d Document) error
 	Delete(d Document) error
@@ -97,7 +97,7 @@ func (m mongoClient) HealthCheck() error {
 
 func (m mongoClient) Persist(d Document) error {
 	if d.IsUniqueID() {
-		_, err := m.FindOneById(d, d.Id())
+		err := m.FindOneById(d, d.Id())
 
 		if err == nil {
 			return errors.New(fmt.Sprintf("Document %s with ID %s already exists", d.DocumentName(), d.Id()))
@@ -140,36 +140,36 @@ func (m mongoClient) GetCollection(d Document) (*mongo.Collection, error) {
 	return client.Database(m.Database).Collection(d.DocumentName()), nil
 }
 
-func (m mongoClient) FindOne(d Document, filters bson.M) (Document, error) {
+func (m mongoClient) FindOne(d Document, filters bson.M) error {
 	ctx, cancel := m.getContext()
 	defer cancel()
 
 	collection, err := m.GetCollection(d)
 
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	if collection == nil {
-		return nil, errors.New(fmt.Sprintf("No collection found for document named %s", d.DocumentName()))
+		return errors.New(fmt.Sprintf("No collection found for document named %s", d.DocumentName()))
 	}
 
 	doc := collection.FindOne(ctx, filters)
 
 	if doc.Err() != nil {
-		return nil, doc.Err()
+		return doc.Err()
 	}
 
-	result, err := d.FromBSON(doc)
+	err = d.FromBSON(doc)
 
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	return result, nil
+	return nil
 }
 
-func (m mongoClient) FindOneById(d Document, id string) (Document, error) {
+func (m mongoClient) FindOneById(d Document, id string) error {
 	return m.FindOne(d, bson.M{"id": id})
 }
 

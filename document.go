@@ -10,7 +10,7 @@ type Document interface {
 	Id() string
 	SetId(id string)
 	DocumentName() string
-	FromBSON(sr *mongo.SingleResult) (Document, error)
+	FromBSON(sr *mongo.SingleResult) error
 	IsUniqueID() bool
 	IncrementVersion()
 	SetCreatedAt()
