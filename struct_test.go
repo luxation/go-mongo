@@ -1,6 +1,7 @@
 package mongo
 
 import (
+	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"go.mongodb.org/mongo-driver/mongo"
 	"testing"
@@ -27,9 +28,10 @@ func (f *FooDocument) FromBSON(sr *mongo.SingleResult) error {
 }
 
 func TestCorrectInheritedType(t *testing.T) {
+	uuidField := uuid.NewString()
 	fooDoc := &FooDocument{
 		MongoDocument: MongoDocument{
-			ID:        "123",
+			ID:        uuidField,
 			CreatedAt: time.Now(),
 			UpdatedAt: time.Now(),
 			Version:   0,
@@ -38,8 +40,7 @@ func TestCorrectInheritedType(t *testing.T) {
 	}
 
 	assert.Equal(t, "foo", fooDoc.DocumentName())
-	assert.True(t, fooDoc.IsUniqueID())
-	assert.Equal(t, "123", fooDoc.Id())
+	assert.Equal(t, uuidField, fooDoc.Id())
 
 	fooDoc.IncrementVersion()
 

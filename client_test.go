@@ -1,16 +1,15 @@
 package mongo
 
 import (
-	"fmt"
 	"github.com/stretchr/testify/assert"
-	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
+	"os"
 	"testing"
 )
 
 type Foo struct {
 	MongoDocument `bson:",inline"`
-	Action        string
+	Action        string `bson:"action,omitempty"`
 }
 
 func (f Foo) DocumentName() string { return "foo" }
@@ -54,20 +53,31 @@ func TestInsertFoo(t *testing.T) {
 	assert.NotNil(t, testClient)
 
 	foo := Foo{
+		Action: "Bar",
+	}
+
+	err := testClient.Persist(&foo)
+
+	os.Setenv("TEST_UUID", foo.Id())
+
+	assert.Nil(t, err)
+}
+
+func TestInsertExistingFoo(t *testing.T) {
+	assert.NotNil(t, testClient)
+
+	existingUUID := os.Getenv("TEST_UUID")
+
+	foo := Foo{
 		MongoDocument: MongoDocument{
-			ID: "foo-bar-1",
+			ID: existingUUID,
 		},
 		Action: "Bar",
 	}
 
 	err := testClient.Persist(&foo)
 
-	assert.Nil(t, err)
-
-	err = testClient.Persist(&foo)
-
 	assert.NotNil(t, err)
-	assert.Equal(t, fmt.Sprintf("Document %s with ID %s already exists", foo.DocumentName(), foo.Id()), err.Error())
 }
 
 func TestFindOneByID(t *testing.T) {
@@ -75,21 +85,26 @@ func TestFindOneByID(t *testing.T) {
 
 	foo := Foo{}
 
-	err := testClient.FindOneById(&foo, "foo-bar-1")
+	existingUUID := os.Getenv("TEST_UUID")
+
+	err := testClient.FindOneById(&foo, existingUUID)
 
 	assert.Nil(t, err)
 	assert.NotNil(t, foo)
-	assert.Equal(t, "foo-bar-1", foo.Id())
+	assert.NotNil(t, foo.CreatedAt)
+	assert.Equal(t, existingUUID, foo.Id())
 	assert.Equal(t, "Bar", foo.Action)
 }
 
 func TestReplaceOrPersistReplace(t *testing.T) {
 	assert.NotNil(t, testClient)
 
+	existingUUID := os.Getenv("TEST_UUID")
+
 	foo := Foo{
 		Action: "Bar Replaced",
 		MongoDocument: MongoDocument{
-			ID: "foo-bar-1",
+			ID: existingUUID,
 		},
 	}
 
@@ -103,12 +118,11 @@ func TestReplaceOrPersistPersist(t *testing.T) {
 
 	foo := Foo{
 		Action: "Bar Persisted",
-		MongoDocument: MongoDocument{
-			ID: "foo-bar-2",
-		},
 	}
 
 	err := testClient.ReplaceOrPersist(&foo)
+
+	os.Setenv("TEST_UUID_2", foo.Id())
 
 	assert.Nil(t, err)
 }
@@ -118,20 +132,24 @@ func TestFindOneByIDNewlyPersisted(t *testing.T) {
 
 	foo := Foo{}
 
-	err := testClient.FindOneById(&foo, "foo-bar-2")
+	existingUUID := os.Getenv("TEST_UUID_2")
+
+	err := testClient.FindOneById(&foo, existingUUID)
 
 	assert.Nil(t, err)
 	assert.NotNil(t, foo)
-	assert.Equal(t, "foo-bar-2", foo.Id())
+	assert.Equal(t, existingUUID, foo.Id())
 }
 
 func TestDelete(t *testing.T) {
 	assert.NotNil(t, testClient)
 
+	existingUUID := os.Getenv("TEST_UUID_2")
+
 	foo := Foo{
 		Action: "Bar Persisted",
 		MongoDocument: MongoDocument{
-			ID: "foo-bar-2",
+			ID: existingUUID,
 		},
 	}
 
@@ -145,14 +163,15 @@ func TestUpdate(t *testing.T) {
 
 	foo := Foo{}
 
-	err := testClient.FindOneById(&foo, "foo-bar-1")
+	existingUUID := os.Getenv("TEST_UUID")
+
+	err := testClient.FindOneById(&foo, existingUUID)
 
 	assert.Nil(t, err)
 
-	foo.IncrementVersion()
-	foo.SetUpdatedAt()
+	foo.Action = "Updated testing the test of the testers"
 
-	err = testClient.Update(&foo, "foo-bar-1", bson.M{"action": "updated bar with update method"})
+	err = testClient.Update(&foo, existingUUID)
 
 	assert.Nil(t, err)
 }
