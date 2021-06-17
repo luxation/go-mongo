@@ -2,7 +2,6 @@ package mongo
 
 import (
 	"github.com/stretchr/testify/assert"
-	"go.mongodb.org/mongo-driver/mongo"
 	"os"
 	"testing"
 )
@@ -13,16 +12,6 @@ type Foo struct {
 }
 
 func (f Foo) DocumentName() string { return "foo" }
-
-func (f *Foo) FromBSON(sr *mongo.SingleResult) error {
-	err := sr.Decode(f)
-
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
 
 func dummyConnect() (Client, error) {
 	clientConfig := ClientConfig{

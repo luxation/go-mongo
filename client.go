@@ -149,7 +149,7 @@ func (m mongoClient) FindOne(d Document, filters bson.M) error {
 		return doc.Err()
 	}
 
-	err = d.FromBSON(doc)
+	err = doc.Decode(d)
 
 	if err != nil {
 		return err

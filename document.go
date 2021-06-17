@@ -3,7 +3,6 @@ package mongo
 import (
 	"github.com/google/uuid"
 	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/mongo"
 	"time"
 )
 
@@ -11,7 +10,6 @@ type Document interface {
 	Id() string
 	SetId(id uuid.UUID)
 	DocumentName() string
-	FromBSON(sr *mongo.SingleResult) error
 	IncrementVersion()
 	SetCreatedAt()
 	SetUpdatedAt()
