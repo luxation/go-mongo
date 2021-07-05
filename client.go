@@ -16,15 +16,9 @@ var (
 	client *mongo.Client
 )
 
-type ClientConfig struct {
-	Host     string
-	Port     uint
-	Database string
-}
-
 type Client interface {
 	getContext() (context.Context, context.CancelFunc)
-	Connect() error
+	Connect(uri string) error
 	Disconnect() error
 	HealthCheck() error
 	Persist(d Document) error
@@ -49,21 +43,11 @@ func (m mongoClient) getContext() (context.Context, context.CancelFunc) {
 	return ctx, cancel
 }
 
-func (m mongoClient) Connect() error {
+func (m mongoClient) Connect(uri string) error {
 	ctx, cancel := m.getContext()
 	defer cancel()
 
-	if m.Host == "" {
-		return errors.New("MongoDB Host is empty")
-	}
-
-	if m.Port == 0 {
-		return errors.New("MongoDB Port is not set")
-	}
-
-	mongoUri := fmt.Sprintf("mongodb://%s:%d", m.Host, m.Port)
-
-	c, err := mongo.Connect(ctx, options.Client().ApplyURI(mongoUri))
+	c, err := mongo.Connect(ctx, options.Client().ApplyURI(uri))
 
 	if err != nil {
 		return err
@@ -289,7 +273,13 @@ func NewMongoClient(config ClientConfig) (Client, error) {
 		Database: config.Database,
 	}
 
-	err := newClient.Connect()
+	uri, err := config.generateURI()
+
+	if err != nil {
+		return nil, err
+	}
+
+	err = newClient.Connect(uri)
 
 	if err != nil {
 		return nil, err
