@@ -33,9 +33,8 @@ type Client interface {
 }
 
 type mongoClient struct {
-	Host     string
-	Port     uint
 	Database string
+	URI      string
 }
 
 func (m mongoClient) getContext() (context.Context, context.CancelFunc) {
@@ -268,8 +267,6 @@ func (m mongoClient) GenerateUUID() uuid.UUID {
 
 func NewMongoClient(config ClientConfig) (Client, error) {
 	newClient := &mongoClient{
-		Host:     config.Host,
-		Port:     config.Port,
 		Database: config.Database,
 	}
 
@@ -278,6 +275,8 @@ func NewMongoClient(config ClientConfig) (Client, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	newClient.URI = uri
 
 	err = newClient.Connect(uri)
 
