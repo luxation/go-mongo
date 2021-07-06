@@ -30,6 +30,7 @@ type Client interface {
 	Delete(d Document) error
 	Update(d Document, id string) error
 	GenerateUUID() uuid.UUID
+	GetURI() string
 }
 
 type mongoClient struct {
@@ -37,12 +38,12 @@ type mongoClient struct {
 	URI      string
 }
 
-func (m mongoClient) getContext() (context.Context, context.CancelFunc) {
+func (m *mongoClient) getContext() (context.Context, context.CancelFunc) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	return ctx, cancel
 }
 
-func (m mongoClient) Connect(uri string) error {
+func (m *mongoClient) Connect(uri string) error {
 	ctx, cancel := m.getContext()
 	defer cancel()
 
@@ -57,7 +58,7 @@ func (m mongoClient) Connect(uri string) error {
 	return nil
 }
 
-func (m mongoClient) Disconnect() error {
+func (m *mongoClient) Disconnect() error {
 	if client == nil {
 		return errors.New("MongoDB client was not initialized")
 	}
@@ -67,7 +68,7 @@ func (m mongoClient) Disconnect() error {
 	return client.Disconnect(ctx)
 }
 
-func (m mongoClient) HealthCheck() error {
+func (m *mongoClient) HealthCheck() error {
 	if client == nil {
 		return errors.New("MongoDB client was not initialized")
 	}
@@ -78,7 +79,7 @@ func (m mongoClient) HealthCheck() error {
 	return client.Ping(ctx, readpref.Primary())
 }
 
-func (m mongoClient) Persist(d Document) error {
+func (m *mongoClient) Persist(d Document) error {
 	if d.Id() == "" {
 		d.SetId(m.GenerateUUID())
 	}
@@ -104,7 +105,7 @@ func (m mongoClient) Persist(d Document) error {
 	return err
 }
 
-func (m mongoClient) GetCollection(d Document) (*mongo.Collection, error) {
+func (m *mongoClient) GetCollection(d Document) (*mongo.Collection, error) {
 	if client == nil {
 		return nil, errors.New("MongoDB client was not initialized")
 	}
@@ -112,7 +113,7 @@ func (m mongoClient) GetCollection(d Document) (*mongo.Collection, error) {
 	return client.Database(m.Database).Collection(d.DocumentName()), nil
 }
 
-func (m mongoClient) FindOne(d Document, filters bson.M) error {
+func (m *mongoClient) FindOne(d Document, filters bson.M) error {
 	ctx, cancel := m.getContext()
 	defer cancel()
 
@@ -141,11 +142,11 @@ func (m mongoClient) FindOne(d Document, filters bson.M) error {
 	return nil
 }
 
-func (m mongoClient) FindOneById(d Document, id string) error {
+func (m *mongoClient) FindOneById(d Document, id string) error {
 	return m.FindOne(d, bson.M{"_id": id})
 }
 
-func (m mongoClient) ReplaceOrPersist(d Document) error {
+func (m *mongoClient) ReplaceOrPersist(d Document) error {
 	ctx, cancel := m.getContext()
 	defer cancel()
 
@@ -180,7 +181,7 @@ func (m mongoClient) ReplaceOrPersist(d Document) error {
 	return nil
 }
 
-func (m mongoClient) Replace(d Document) error {
+func (m *mongoClient) Replace(d Document) error {
 	ctx, cancel := m.getContext()
 	defer cancel()
 
@@ -208,7 +209,7 @@ func (m mongoClient) Replace(d Document) error {
 	return collection.FindOneAndReplace(ctx, filter, bsonObj).Err()
 }
 
-func (m mongoClient) Delete(d Document) error {
+func (m *mongoClient) Delete(d Document) error {
 	ctx, cancel := m.getContext()
 	defer cancel()
 
@@ -237,7 +238,7 @@ func (m mongoClient) Delete(d Document) error {
 	return nil
 }
 
-func (m mongoClient) Update(d Document, id string) error {
+func (m *mongoClient) Update(d Document, id string) error {
 	ctx, cancel := m.getContext()
 	defer cancel()
 
@@ -261,8 +262,12 @@ func (m mongoClient) Update(d Document, id string) error {
 	return err
 }
 
-func (m mongoClient) GenerateUUID() uuid.UUID {
+func (m *mongoClient) GenerateUUID() uuid.UUID {
 	return uuid.New()
+}
+
+func (m *mongoClient) GetURI() string {
+	return m.URI
 }
 
 func NewMongoClient(config ClientConfig) (Client, error) {
