@@ -18,7 +18,7 @@ var (
 
 type Client interface {
 	getContext() (context.Context, context.CancelFunc)
-	Connect(uri string) error
+	Connect() error
 	Disconnect() error
 	HealthCheck() error
 	Persist(d Document) error
@@ -34,8 +34,8 @@ type Client interface {
 }
 
 type mongoClient struct {
-	Database string
-	URI      string
+	database string
+	uri      string
 }
 
 func (m *mongoClient) getContext() (context.Context, context.CancelFunc) {
@@ -43,11 +43,11 @@ func (m *mongoClient) getContext() (context.Context, context.CancelFunc) {
 	return ctx, cancel
 }
 
-func (m *mongoClient) Connect(uri string) error {
+func (m *mongoClient) Connect() error {
 	ctx, cancel := m.getContext()
 	defer cancel()
 
-	c, err := mongo.Connect(ctx, options.Client().ApplyURI(uri))
+	c, err := mongo.Connect(ctx, options.Client().ApplyURI(m.uri))
 
 	if err != nil {
 		return err
@@ -110,7 +110,7 @@ func (m *mongoClient) GetCollection(d Document) (*mongo.Collection, error) {
 		return nil, errors.New("MongoDB client was not initialized")
 	}
 
-	return client.Database(m.Database).Collection(d.DocumentName()), nil
+	return client.Database(m.database).Collection(d.DocumentName()), nil
 }
 
 func (m *mongoClient) FindOne(d Document, filters bson.M) error {
@@ -267,12 +267,12 @@ func (m *mongoClient) GenerateUUID() uuid.UUID {
 }
 
 func (m *mongoClient) GetURI() string {
-	return m.URI
+	return m.uri
 }
 
-func NewMongoClient(config ClientConfig) (Client, error) {
+func NewClient(config ClientConfig) (Client, error) {
 	newClient := &mongoClient{
-		Database: config.Database,
+		database: config.Database,
 	}
 
 	uri, err := config.generateURI()
@@ -281,9 +281,32 @@ func NewMongoClient(config ClientConfig) (Client, error) {
 		return nil, err
 	}
 
-	newClient.URI = uri
+	newClient.uri = uri
 
-	err = newClient.Connect(uri)
+	err = newClient.Connect()
+
+	if err != nil {
+		return nil, err
+	}
+
+	return newClient, nil
+}
+
+// Deprecated: Use NewClient instead.
+func NewMongoClient(config ClientConfig) (Client, error) {
+	newClient := &mongoClient{
+		database: config.Database,
+	}
+
+	uri, err := config.generateURI()
+
+	if err != nil {
+		return nil, err
+	}
+
+	newClient.uri = uri
+
+	err = newClient.Connect()
 
 	if err != nil {
 		return nil, err

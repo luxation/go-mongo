@@ -9,7 +9,7 @@ import (
 )
 
 type FooDocument struct {
-	MongoDocument
+	BasicDocument
 	Action string
 }
 
@@ -30,7 +30,7 @@ func (f *FooDocument) FromBSON(sr *mongo.SingleResult) error {
 func TestCorrectInheritedType(t *testing.T) {
 	uuidField := uuid.NewString()
 	fooDoc := &FooDocument{
-		MongoDocument: MongoDocument{
+		BasicDocument: BasicDocument{
 			ID:        uuidField,
 			CreatedAt: time.Now(),
 			UpdatedAt: time.Now(),

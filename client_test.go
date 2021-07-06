@@ -7,7 +7,7 @@ import (
 )
 
 type Foo struct {
-	MongoDocument `bson:",inline"`
+	BasicDocument `bson:",inline"`
 	Action        string `bson:"action,omitempty"`
 }
 
@@ -20,7 +20,7 @@ func dummyConnect() (Client, error) {
 		Database: "test_db",
 	}
 
-	return NewMongoClient(clientConfig)
+	return NewClient(clientConfig)
 }
 
 // WARNING: Those tests should be run in order or at least TestConnect should
@@ -58,7 +58,7 @@ func TestInsertExistingFoo(t *testing.T) {
 	existingUUID := os.Getenv("TEST_UUID")
 
 	foo := Foo{
-		MongoDocument: MongoDocument{
+		BasicDocument: BasicDocument{
 			ID: existingUUID,
 		},
 		Action: "Bar",
@@ -92,7 +92,7 @@ func TestReplaceOrPersistReplace(t *testing.T) {
 
 	foo := Foo{
 		Action: "Bar Replaced",
-		MongoDocument: MongoDocument{
+		BasicDocument: BasicDocument{
 			ID: existingUUID,
 		},
 	}
@@ -137,7 +137,7 @@ func TestDelete(t *testing.T) {
 
 	foo := Foo{
 		Action: "Bar Persisted",
-		MongoDocument: MongoDocument{
+		BasicDocument: BasicDocument{
 			ID: existingUUID,
 		},
 	}
