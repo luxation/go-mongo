@@ -77,9 +77,13 @@ func (c *ClientConfig) generateURI() (string, error) {
 			return "", errors.New("credentials are not set")
 		}
 
-		connectURI = fmt.Sprintf("%s://%s:%s@%s:%d", connectURI, c.Credentials.Username, c.Credentials.Password, c.Host, c.Port)
+		connectURI = fmt.Sprintf("%s://%s:%s@%s", connectURI, c.Credentials.Username, c.Credentials.Password, c.Host)
 	} else {
-		connectURI = fmt.Sprintf("%s://%s:%d", connectURI, c.Host, c.Port)
+		connectURI = fmt.Sprintf("%s://%s", connectURI, c.Host)
+	}
+
+	if !c.Clustered {
+		connectURI = fmt.Sprintf("%s:%d", connectURI, c.Port)
 	}
 
 	if c.DBNameInPath {

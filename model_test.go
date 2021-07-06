@@ -199,7 +199,7 @@ func TestUriGeneration(t *testing.T) {
 				},
 			},
 			hasError:   false,
-			output:     "mongodb+srv://user:password@host:1/?ssl=true&ssl_ca_certs=cert-1&replicaSet=replica-1&readPreference=preference&retryWrites=true",
+			output:     "mongodb+srv://user:password@host/?ssl=true&ssl_ca_certs=cert-1&replicaSet=replica-1&readPreference=preference&retryWrites=true",
 			stacktrace: "",
 		},
 		{
@@ -222,7 +222,7 @@ func TestUriGeneration(t *testing.T) {
 				},
 			},
 			hasError:   false,
-			output:     "mongodb+srv://user:password@host:1/db?ssl=true&ssl_ca_certs=cert-1&replicaSet=replica-1&readPreference=preference&retryWrites=true",
+			output:     "mongodb+srv://user:password@host/db?ssl=true&ssl_ca_certs=cert-1&replicaSet=replica-1&readPreference=preference&retryWrites=true",
 			stacktrace: "",
 		},
 	}
