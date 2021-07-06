@@ -99,7 +99,7 @@ func TestUriGeneration(t *testing.T) {
 				Database: "db",
 			},
 			hasError:   false,
-			output:     "mongodb://host:1",
+			output:     "mongodb://host:1/",
 			stacktrace: "",
 		},
 		{
@@ -141,7 +141,7 @@ func TestUriGeneration(t *testing.T) {
 				},
 			},
 			hasError:   false,
-			output:     "mongodb://user:password@host:1",
+			output:     "mongodb://user:password@host:1/",
 			stacktrace: "",
 		},
 		{
@@ -178,6 +178,51 @@ func TestUriGeneration(t *testing.T) {
 			},
 			hasError:   false,
 			output:     "mongodb://user:password@host:1/?ssl=true&ssl_ca_certs=cert-1&replicaSet=replica-1&readPreference=preference&retryWrites=true",
+			stacktrace: "",
+		},
+		{
+			config: ClientConfig{
+				Host:      "host",
+				Port:      1,
+				Database:  "db",
+				Clustered: true,
+				Credentials: &CredentialConfig{
+					Username: "user",
+					Password: "password",
+				},
+				Options: &ConnectionOptions{
+					SSL:            true,
+					SSLCert:        "cert-1",
+					ReplicaSet:     "replica-1",
+					ReadPreference: "preference",
+					RetryWrites:    true,
+				},
+			},
+			hasError:   false,
+			output:     "mongodb+srv://user:password@host:1/?ssl=true&ssl_ca_certs=cert-1&replicaSet=replica-1&readPreference=preference&retryWrites=true",
+			stacktrace: "",
+		},
+		{
+			config: ClientConfig{
+				Host:         "host",
+				Port:         1,
+				Database:     "db",
+				Clustered:    true,
+				DBNameInPath: true,
+				Credentials: &CredentialConfig{
+					Username: "user",
+					Password: "password",
+				},
+				Options: &ConnectionOptions{
+					SSL:            true,
+					SSLCert:        "cert-1",
+					ReplicaSet:     "replica-1",
+					ReadPreference: "preference",
+					RetryWrites:    true,
+				},
+			},
+			hasError:   false,
+			output:     "mongodb+srv://user:password@host:1/db?ssl=true&ssl_ca_certs=cert-1&replicaSet=replica-1&readPreference=preference&retryWrites=true",
 			stacktrace: "",
 		},
 	}

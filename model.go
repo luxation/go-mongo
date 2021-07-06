@@ -42,11 +42,13 @@ func (c *ConnectionOptions) generateParams() string {
 }
 
 type ClientConfig struct {
-	Host        string
-	Port        uint
-	Database    string
-	Credentials *CredentialConfig
-	Options     *ConnectionOptions
+	Host         string
+	Port         uint
+	Database     string
+	Clustered    bool
+	DBNameInPath bool
+	Credentials  *CredentialConfig
+	Options      *ConnectionOptions
 }
 
 func (c *ClientConfig) generateURI() (string, error) {
@@ -64,18 +66,30 @@ func (c *ClientConfig) generateURI() (string, error) {
 
 	connectURI := ""
 
+	if c.Clustered {
+		connectURI = "mongodb+srv"
+	} else {
+		connectURI = "mongodb"
+	}
+
 	if c.Credentials != nil {
 		if c.Credentials.Username == "" || c.Credentials.Password == "" {
 			return "", errors.New("credentials are not set")
 		}
 
-		connectURI = fmt.Sprintf("mongodb://%s:%s@%s:%d", c.Credentials.Username, c.Credentials.Password, c.Host, c.Port)
+		connectURI = fmt.Sprintf("%s://%s:%s@%s:%d", connectURI, c.Credentials.Username, c.Credentials.Password, c.Host, c.Port)
 	} else {
-		connectURI = fmt.Sprintf("mongodb://%s:%d", c.Host, c.Port)
+		connectURI = fmt.Sprintf("%s://%s:%d", connectURI, c.Host, c.Port)
+	}
+
+	if c.DBNameInPath {
+		connectURI = fmt.Sprintf("%s/%s", connectURI, c.Database)
+	} else {
+		connectURI = fmt.Sprintf("%s/", connectURI)
 	}
 
 	if c.Options != nil {
-		connectURI = fmt.Sprintf("%s/?%s", connectURI, c.Options.generateParams())
+		connectURI = fmt.Sprintf("%s?%s", connectURI, c.Options.generateParams())
 	}
 
 	return connectURI, nil
