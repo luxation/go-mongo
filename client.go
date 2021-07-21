@@ -164,15 +164,9 @@ func (m *mongoClient) ReplaceOrPersist(d Document) error {
 	d.SetCreatedAt()
 	d.SetUpdatedAt()
 
-	bsonObj, err := ToBSON(d)
-
-	if err != nil {
-		return err
-	}
-
 	filter := bson.M{"_id": d.Id()}
 
-	err = collection.FindOneAndReplace(ctx, filter, bsonObj).Err()
+	err = collection.FindOneAndReplace(ctx, filter, d).Err()
 
 	if err != nil {
 		return m.Persist(d)
@@ -198,15 +192,9 @@ func (m *mongoClient) Replace(d Document) error {
 	d.IncrementVersion()
 	d.SetUpdatedAt()
 
-	bsonObj, err := ToBSON(d)
-
-	if err != nil {
-		return err
-	}
-
 	filter := bson.M{"_id": d.Id()}
 
-	return collection.FindOneAndReplace(ctx, filter, bsonObj).Err()
+	return collection.FindOneAndReplace(ctx, filter, d).Err()
 }
 
 func (m *mongoClient) Delete(d Document) error {

@@ -8,7 +8,7 @@ import (
 
 type Foo struct {
 	BasicDocument `bson:",inline"`
-	Action        string `bson:"action,omitempty"`
+	Action        string
 }
 
 func (f Foo) DocumentName() string { return "foo" }

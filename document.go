@@ -2,7 +2,6 @@ package mongo
 
 import (
 	"github.com/google/uuid"
-	"go.mongodb.org/mongo-driver/bson"
 	"time"
 )
 
@@ -16,10 +15,10 @@ type Document interface {
 }
 
 type BasicDocument struct {
-	ID        string    `json:"id" bson:"_id,omitempty"`
-	CreatedAt time.Time `json:"created_at" bson:"created_at,omitempty"`
-	UpdatedAt time.Time `json:"updated_at" bson:"updated_at,omitempty"`
-	Version   uint      `json:"version" bson:"version,omitempty"`
+	ID        string    `json:"id" bson:"_id"`
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
+	Version   uint      `json:"version"`
 }
 
 func (d BasicDocument) Id() string {
@@ -44,10 +43,10 @@ func (d *BasicDocument) SetUpdatedAt() {
 
 // Deprecated: Use BasicDocument instead.
 type MongoDocument struct {
-	ID        string    `json:"id" bson:"_id,omitempty"`
-	CreatedAt time.Time `json:"created_at" bson:"created_at,omitempty"`
-	UpdatedAt time.Time `json:"updated_at" bson:"updated_at,omitempty"`
-	Version   uint      `json:"version" bson:"version,omitempty"`
+	ID        string    `json:"id"`
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
+	Version   uint      `json:"version"`
 }
 
 func (d MongoDocument) Id() string {
@@ -68,14 +67,4 @@ func (d *MongoDocument) SetCreatedAt() {
 
 func (d *MongoDocument) SetUpdatedAt() {
 	d.UpdatedAt = time.Now()
-}
-
-func ToBSON(d Document) ([]byte, error) {
-	bsonRes, err := bson.Marshal(d)
-
-	if err != nil {
-		return nil, err
-	}
-
-	return bsonRes, nil
 }
