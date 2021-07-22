@@ -47,7 +47,7 @@ func TestInsertFoo(t *testing.T) {
 
 	err := testClient.Persist(&foo)
 
-	os.Setenv("TEST_UUID", foo.Id())
+	os.Setenv("TEST_UUID", foo.GetID())
 
 	assert.Nil(t, err)
 }
@@ -81,7 +81,7 @@ func TestFindOneByID(t *testing.T) {
 	assert.Nil(t, err)
 	assert.NotNil(t, foo)
 	assert.NotNil(t, foo.CreatedAt)
-	assert.Equal(t, existingUUID, foo.Id())
+	assert.Equal(t, existingUUID, foo.GetID())
 	assert.Equal(t, "Bar", foo.Action)
 }
 
@@ -111,7 +111,7 @@ func TestReplaceOrPersistPersist(t *testing.T) {
 
 	err := testClient.ReplaceOrPersist(&foo)
 
-	os.Setenv("TEST_UUID_2", foo.Id())
+	os.Setenv("TEST_UUID_2", foo.GetID())
 
 	assert.Nil(t, err)
 }
@@ -127,7 +127,7 @@ func TestFindOneByIDNewlyPersisted(t *testing.T) {
 
 	assert.Nil(t, err)
 	assert.NotNil(t, foo)
-	assert.Equal(t, existingUUID, foo.Id())
+	assert.Equal(t, existingUUID, foo.GetID())
 }
 
 func TestDelete(t *testing.T) {

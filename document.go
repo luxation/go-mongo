@@ -6,8 +6,8 @@ import (
 )
 
 type Document interface {
-	Id() string
-	SetId(id uuid.UUID)
+	GetID() string
+	SetID(id uuid.UUID)
 	DocumentName() string
 	IncrementVersion()
 	SetCreatedAt()
@@ -21,11 +21,11 @@ type BasicDocument struct {
 	Version   int       `json:"version"`
 }
 
-func (d BasicDocument) Id() string {
+func (d BasicDocument) GetID() string {
 	return d.ID
 }
 
-func (d *BasicDocument) SetId(id uuid.UUID) {
+func (d *BasicDocument) SetID(id uuid.UUID) {
 	d.ID = id.String()
 }
 

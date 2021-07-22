@@ -80,8 +80,8 @@ func (m *mongoClient) HealthCheck() error {
 }
 
 func (m *mongoClient) Persist(d Document) error {
-	if d.Id() == "" {
-		d.SetId(m.GenerateUUID())
+	if d.GetID() == "" {
+		d.SetID(m.GenerateUUID())
 	}
 	d.SetCreatedAt()
 	d.SetUpdatedAt()
@@ -164,7 +164,7 @@ func (m *mongoClient) ReplaceOrPersist(d Document) error {
 	d.SetCreatedAt()
 	d.SetUpdatedAt()
 
-	filter := bson.M{"_id": d.Id()}
+	filter := bson.M{"_id": d.GetID()}
 
 	err = collection.FindOneAndReplace(ctx, filter, d).Err()
 
@@ -192,7 +192,7 @@ func (m *mongoClient) Replace(d Document) error {
 	d.IncrementVersion()
 	d.SetUpdatedAt()
 
-	filter := bson.M{"_id": d.Id()}
+	filter := bson.M{"_id": d.GetID()}
 
 	return collection.FindOneAndReplace(ctx, filter, d).Err()
 }
@@ -211,7 +211,7 @@ func (m *mongoClient) Delete(d Document) error {
 		return errors.New(fmt.Sprintf("No collection found for document named %s", d.DocumentName()))
 	}
 
-	filter := bson.M{"_id": d.Id()}
+	filter := bson.M{"_id": d.GetID()}
 
 	dr, err := collection.DeleteOne(ctx, filter)
 
