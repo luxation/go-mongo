@@ -18,7 +18,7 @@ type BasicDocument struct {
 	ID        string    `json:"id" bson:"_id"`
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`
-	Version   uint      `json:"version"`
+	Version   int       `json:"version"`
 }
 
 func (d BasicDocument) Id() string {

@@ -44,5 +44,5 @@ func TestCorrectInheritedType(t *testing.T) {
 
 	fooDoc.IncrementVersion()
 
-	assert.Equal(t, uint(1), fooDoc.Version)
+	assert.Equal(t, 1, fooDoc.Version)
 }
