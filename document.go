@@ -15,10 +15,10 @@ type Document interface {
 }
 
 type BasicDocument struct {
-	ID        string    `json:"id" bson:"_id"`
-	CreatedAt time.Time `json:"created_at"`
-	UpdatedAt time.Time `json:"updated_at"`
-	Version   int       `json:"version"`
+	ID        string    `json:"id" bson:"_id,omitempty"`
+	CreatedAt time.Time `json:"created_at" bson:"created_at,omitempty"`
+	UpdatedAt time.Time `json:"updated_at" bson:"updated_at,omitempty"`
+	Version   int       `json:"version" bson:"version,omitempty"`
 }
 
 func (d BasicDocument) GetID() string {
@@ -38,33 +38,5 @@ func (d *BasicDocument) SetCreatedAt() {
 }
 
 func (d *BasicDocument) SetUpdatedAt() {
-	d.UpdatedAt = time.Now()
-}
-
-// Deprecated: Use BasicDocument instead.
-type MongoDocument struct {
-	ID        string    `json:"id"`
-	CreatedAt time.Time `json:"created_at"`
-	UpdatedAt time.Time `json:"updated_at"`
-	Version   uint      `json:"version"`
-}
-
-func (d MongoDocument) Id() string {
-	return d.ID
-}
-
-func (d *MongoDocument) SetId(id uuid.UUID) {
-	d.ID = id.String()
-}
-
-func (d *MongoDocument) IncrementVersion() {
-	d.Version++
-}
-
-func (d *MongoDocument) SetCreatedAt() {
-	d.CreatedAt = time.Now()
-}
-
-func (d *MongoDocument) SetUpdatedAt() {
 	d.UpdatedAt = time.Now()
 }

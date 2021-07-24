@@ -16,19 +16,31 @@ var (
 	client *mongo.Client
 )
 
+type ResultCursor struct {
+	*mongo.Cursor
+}
+
 type Client interface {
-	getContext() (context.Context, context.CancelFunc)
 	Connect() error
 	Disconnect() error
 	HealthCheck() error
 	Persist(d Document) error
+	PersistWithContext(d Document, ctx context.Context) error
 	GetCollection(d Document) (*mongo.Collection, error)
+	FindAll(d Document, filters bson.M) (*ResultCursor, error)
+	FindAllWithContext(d Document, filters bson.M, ctx context.Context) (*ResultCursor, error)
 	FindOne(d Document, filters bson.M) error
+	FindOneWithContext(d Document, filters bson.M, ctx context.Context) error
 	FindOneById(d Document, id string) error
+	FindOneByIdWithContext(d Document, id string, ctx context.Context) error
 	ReplaceOrPersist(d Document) error
+	ReplaceOrPersistWithContext(d Document, ctx context.Context) error
 	Replace(d Document) error
+	ReplaceWithContext(d Document, ctx context.Context) error
 	Delete(d Document) error
+	DeleteWithContext(d Document, ctx context.Context) error
 	Update(d Document, id string) error
+	UpdateWithContext(d Document, id string, ctx context.Context) error
 	GenerateUUID() uuid.UUID
 	GetURI() string
 }
@@ -36,6 +48,40 @@ type Client interface {
 type mongoClient struct {
 	database string
 	uri      string
+}
+
+func (m *mongoClient) FindAll(d Document, filters bson.M) (*ResultCursor, error) {
+	ctx, cancel := m.getContext()
+	defer cancel()
+
+	collection, err := m.GetCollection(d)
+
+	if err != nil {
+		return nil, err
+	}
+
+	find, err := collection.Find(ctx, filters)
+	if err != nil {
+		return nil, err
+	}
+
+	return &ResultCursor{Cursor: find}, nil
+
+}
+
+func (m *mongoClient) FindAllWithContext(d Document, filters bson.M, ctx context.Context) (*ResultCursor, error) {
+	collection, err := m.GetCollection(d)
+
+	if err != nil {
+		return nil, err
+	}
+
+	find, err := collection.Find(ctx, filters)
+	if err != nil {
+		return nil, err
+	}
+
+	return &ResultCursor{Cursor: find}, nil
 }
 
 func (m *mongoClient) getContext() (context.Context, context.CancelFunc) {
@@ -105,6 +151,29 @@ func (m *mongoClient) Persist(d Document) error {
 	return err
 }
 
+func (m *mongoClient) PersistWithContext(d Document, ctx context.Context) error {
+	if d.GetID() == "" {
+		d.SetID(m.GenerateUUID())
+	}
+	d.SetCreatedAt()
+	d.SetUpdatedAt()
+	d.IncrementVersion()
+
+	collection, err := m.GetCollection(d)
+
+	if err != nil {
+		return err
+	}
+
+	if collection == nil {
+		return errors.New(fmt.Sprintf("No collection found for document named %s", d.DocumentName()))
+	}
+
+	_, err = collection.InsertOne(ctx, d)
+
+	return err
+}
+
 func (m *mongoClient) GetCollection(d Document) (*mongo.Collection, error) {
 	if client == nil {
 		return nil, errors.New("MongoDB client was not initialized")
@@ -142,8 +211,38 @@ func (m *mongoClient) FindOne(d Document, filters bson.M) error {
 	return nil
 }
 
+func (m *mongoClient) FindOneWithContext(d Document, filters bson.M, ctx context.Context) error {
+	collection, err := m.GetCollection(d)
+
+	if err != nil {
+		return err
+	}
+
+	if collection == nil {
+		return errors.New(fmt.Sprintf("No collection found for document named %s", d.DocumentName()))
+	}
+
+	doc := collection.FindOne(ctx, filters)
+
+	if doc.Err() != nil {
+		return doc.Err()
+	}
+
+	err = doc.Decode(d)
+
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func (m *mongoClient) FindOneById(d Document, id string) error {
 	return m.FindOne(d, bson.M{"_id": id})
+}
+
+func (m *mongoClient) FindOneByIdWithContext(d Document, id string, ctx context.Context) error {
+	return m.FindOneWithContext(d, bson.M{"_id": id}, ctx)
 }
 
 func (m *mongoClient) ReplaceOrPersist(d Document) error {
@@ -175,6 +274,32 @@ func (m *mongoClient) ReplaceOrPersist(d Document) error {
 	return nil
 }
 
+func (m *mongoClient) ReplaceOrPersistWithContext(d Document, ctx context.Context) error {
+	collection, err := m.GetCollection(d)
+
+	if err != nil {
+		return err
+	}
+
+	if collection == nil {
+		return errors.New(fmt.Sprintf("No collection found for document named %s", d.DocumentName()))
+	}
+
+	d.IncrementVersion()
+	d.SetCreatedAt()
+	d.SetUpdatedAt()
+
+	filter := bson.M{"_id": d.GetID()}
+
+	err = collection.FindOneAndReplace(ctx, filter, d).Err()
+
+	if err != nil {
+		return m.PersistWithContext(d, ctx)
+	}
+
+	return nil
+}
+
 func (m *mongoClient) Replace(d Document) error {
 	ctx, cancel := m.getContext()
 	defer cancel()
@@ -197,10 +322,55 @@ func (m *mongoClient) Replace(d Document) error {
 	return collection.FindOneAndReplace(ctx, filter, d).Err()
 }
 
+func (m *mongoClient) ReplaceWithContext(d Document, ctx context.Context) error {
+	collection, err := m.GetCollection(d)
+
+	if err != nil {
+		return err
+	}
+
+	if collection == nil {
+		return errors.New(fmt.Sprintf("No collection found for document named %s", d.DocumentName()))
+	}
+
+	d.IncrementVersion()
+	d.SetUpdatedAt()
+
+	filter := bson.M{"_id": d.GetID()}
+
+	return collection.FindOneAndReplace(ctx, filter, d).Err()
+}
+
 func (m *mongoClient) Delete(d Document) error {
 	ctx, cancel := m.getContext()
 	defer cancel()
 
+	collection, err := m.GetCollection(d)
+
+	if err != nil {
+		return err
+	}
+
+	if collection == nil {
+		return errors.New(fmt.Sprintf("No collection found for document named %s", d.DocumentName()))
+	}
+
+	filter := bson.M{"_id": d.GetID()}
+
+	dr, err := collection.DeleteOne(ctx, filter)
+
+	if err != nil {
+		return err
+	}
+
+	if dr.DeletedCount != 1 {
+		return errors.New(fmt.Sprintf("Deleted %q elements", dr.DeletedCount))
+	}
+
+	return nil
+}
+
+func (m *mongoClient) DeleteWithContext(d Document, ctx context.Context) error {
 	collection, err := m.GetCollection(d)
 
 	if err != nil {
@@ -250,6 +420,27 @@ func (m *mongoClient) Update(d Document, id string) error {
 	return err
 }
 
+func (m *mongoClient) UpdateWithContext(d Document, id string, ctx context.Context) error {
+	collection, err := m.GetCollection(d)
+
+	if err != nil {
+		return err
+	}
+
+	if collection == nil {
+		return errors.New(fmt.Sprintf("No collection found for document named %s", d.DocumentName()))
+	}
+
+	d.IncrementVersion()
+	d.SetUpdatedAt()
+
+	filter := bson.M{"_id": id}
+
+	_, err = collection.UpdateOne(ctx, filter, bson.M{"$set": d})
+
+	return err
+}
+
 func (m *mongoClient) GenerateUUID() uuid.UUID {
 	return uuid.New()
 }
@@ -259,29 +450,6 @@ func (m *mongoClient) GetURI() string {
 }
 
 func NewClient(config ClientConfig) (Client, error) {
-	newClient := &mongoClient{
-		database: config.Database,
-	}
-
-	uri, err := config.generateURI()
-
-	if err != nil {
-		return nil, err
-	}
-
-	newClient.uri = uri
-
-	err = newClient.Connect()
-
-	if err != nil {
-		return nil, err
-	}
-
-	return newClient, nil
-}
-
-// Deprecated: Use NewClient instead.
-func NewMongoClient(config ClientConfig) (Client, error) {
 	newClient := &mongoClient{
 		database: config.Database,
 	}
