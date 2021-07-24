@@ -131,7 +131,6 @@ func (m *mongoClient) Persist(d Document) error {
 	}
 	d.SetCreatedAt()
 	d.SetUpdatedAt()
-	d.IncrementVersion()
 
 	ctx, cancel := m.getContext()
 	defer cancel()
@@ -157,7 +156,6 @@ func (m *mongoClient) PersistWithContext(d Document, ctx context.Context) error 
 	}
 	d.SetCreatedAt()
 	d.SetUpdatedAt()
-	d.IncrementVersion()
 
 	collection, err := m.GetCollection(d)
 
@@ -259,7 +257,6 @@ func (m *mongoClient) ReplaceOrPersist(d Document) error {
 		return errors.New(fmt.Sprintf("No collection found for document named %s", d.DocumentName()))
 	}
 
-	d.IncrementVersion()
 	d.SetCreatedAt()
 	d.SetUpdatedAt()
 
@@ -285,7 +282,6 @@ func (m *mongoClient) ReplaceOrPersistWithContext(d Document, ctx context.Contex
 		return errors.New(fmt.Sprintf("No collection found for document named %s", d.DocumentName()))
 	}
 
-	d.IncrementVersion()
 	d.SetCreatedAt()
 	d.SetUpdatedAt()
 
@@ -314,7 +310,6 @@ func (m *mongoClient) Replace(d Document) error {
 		return errors.New(fmt.Sprintf("No collection found for document named %s", d.DocumentName()))
 	}
 
-	d.IncrementVersion()
 	d.SetUpdatedAt()
 
 	filter := bson.M{"_id": d.GetID()}
@@ -333,7 +328,6 @@ func (m *mongoClient) ReplaceWithContext(d Document, ctx context.Context) error 
 		return errors.New(fmt.Sprintf("No collection found for document named %s", d.DocumentName()))
 	}
 
-	d.IncrementVersion()
 	d.SetUpdatedAt()
 
 	filter := bson.M{"_id": d.GetID()}
@@ -410,7 +404,6 @@ func (m *mongoClient) Update(d Document, id string) error {
 		return errors.New(fmt.Sprintf("No collection found for document named %s", d.DocumentName()))
 	}
 
-	d.IncrementVersion()
 	d.SetUpdatedAt()
 
 	filter := bson.M{"_id": id}
@@ -431,7 +424,6 @@ func (m *mongoClient) UpdateWithContext(d Document, id string, ctx context.Conte
 		return errors.New(fmt.Sprintf("No collection found for document named %s", d.DocumentName()))
 	}
 
-	d.IncrementVersion()
 	d.SetUpdatedAt()
 
 	filter := bson.M{"_id": id}

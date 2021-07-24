@@ -34,15 +34,10 @@ func TestCorrectInheritedType(t *testing.T) {
 			ID:        uuidField,
 			CreatedAt: time.Now(),
 			UpdatedAt: time.Now(),
-			Version:   0,
 		},
 		Action: "Bar",
 	}
 
 	assert.Equal(t, "foo", fooDoc.DocumentName())
 	assert.Equal(t, uuidField, fooDoc.GetID())
-
-	fooDoc.IncrementVersion()
-
-	assert.Equal(t, 1, fooDoc.Version)
 }
