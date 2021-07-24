@@ -39,8 +39,8 @@ type Client interface {
 	ReplaceWithContext(d Document, ctx context.Context) error
 	Delete(d Document) error
 	DeleteWithContext(d Document, ctx context.Context) error
-	Update(d Document, id string) error
-	UpdateWithContext(d Document, id string, ctx context.Context) error
+	Update(d Document, id string, input interface{}) error
+	UpdateWithContext(d Document, id string, input interface{}, ctx context.Context) error
 	GenerateUUID() uuid.UUID
 	GetURI() string
 }
@@ -390,7 +390,7 @@ func (m *mongoClient) DeleteWithContext(d Document, ctx context.Context) error {
 	return nil
 }
 
-func (m *mongoClient) Update(d Document, id string) error {
+func (m *mongoClient) Update(d Document, id string, input interface{}) error {
 	ctx, cancel := m.getContext()
 	defer cancel()
 
@@ -404,16 +404,19 @@ func (m *mongoClient) Update(d Document, id string) error {
 		return errors.New(fmt.Sprintf("No collection found for document named %s", d.DocumentName()))
 	}
 
-	d.SetUpdatedAt()
-
 	filter := bson.M{"_id": id}
 
-	_, err = collection.UpdateOne(ctx, filter, bson.M{"$set": d})
+	updates := FlattenedMapFromInterface(input)
+	updates["updatedAt"] = time.Now()
+
+	_, err = collection.UpdateOne(ctx, filter, bson.D{
+		{Key: "$set", Value: updates},
+	})
 
 	return err
 }
 
-func (m *mongoClient) UpdateWithContext(d Document, id string, ctx context.Context) error {
+func (m *mongoClient) UpdateWithContext(d Document, id string, input interface{}, ctx context.Context) error {
 	collection, err := m.GetCollection(d)
 
 	if err != nil {
@@ -424,11 +427,14 @@ func (m *mongoClient) UpdateWithContext(d Document, id string, ctx context.Conte
 		return errors.New(fmt.Sprintf("No collection found for document named %s", d.DocumentName()))
 	}
 
-	d.SetUpdatedAt()
-
 	filter := bson.M{"_id": id}
 
-	_, err = collection.UpdateOne(ctx, filter, bson.M{"$set": d})
+	updates := FlattenedMapFromInterface(input)
+	updates["updatedAt"] = time.Now()
+
+	_, err = collection.UpdateOne(ctx, filter, bson.D{
+		{Key: "$set", Value: updates},
+	})
 
 	return err
 }

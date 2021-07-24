@@ -15,8 +15,8 @@ type Document interface {
 
 type BasicDocument struct {
 	ID        string    `json:"id" bson:"_id,omitempty"`
-	CreatedAt time.Time `json:"created_at" bson:"created_at,omitempty"`
-	UpdatedAt time.Time `json:"updated_at" bson:"updated_at,omitempty"`
+	CreatedAt time.Time `json:"created_at" bson:"createdAt,omitempty"`
+	UpdatedAt time.Time `json:"updated_at" bson:"updatedAt,omitempty"`
 }
 
 func (d BasicDocument) GetID() string {

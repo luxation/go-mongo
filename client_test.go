@@ -150,17 +150,15 @@ func TestDelete(t *testing.T) {
 func TestUpdate(t *testing.T) {
 	assert.NotNil(t, testClient)
 
-	foo := Foo{}
+	foo := Foo{
+		Action: "Updated testing the test of the testers",
+	}
 
 	existingUUID := os.Getenv("TEST_UUID")
 
-	err := testClient.FindOneById(&foo, existingUUID)
-
-	assert.Nil(t, err)
-
 	foo.Action = "Updated testing the test of the testers"
 
-	err = testClient.Update(&foo, existingUUID)
+	err := testClient.Update(&foo, existingUUID, foo)
 
 	assert.Nil(t, err)
 }
