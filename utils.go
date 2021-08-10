@@ -38,10 +38,6 @@ func flattenNestMap(prefix string, src map[string]interface{}, dest map[string]i
 			}
 		case nil:
 			break
-		case string:
-			if v != "" {
-				dest[prefix+k] = v
-			}
 		default:
 			dest[prefix+k] = v
 		}
