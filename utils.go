@@ -2,7 +2,6 @@ package mongo
 
 import (
 	"encoding/json"
-	"strconv"
 )
 
 func FlattenedMapFromInterface(from interface{}) map[string]interface{} {
@@ -32,10 +31,6 @@ func flattenNestMap(prefix string, src map[string]interface{}, dest map[string]i
 		switch child := v.(type) {
 		case map[string]interface{}:
 			flattenNestMap(prefix+k, child, dest)
-		case []interface{}:
-			for i := 0; i < len(child); i++ {
-				dest[prefix+k+"."+strconv.Itoa(i)] = child[i]
-			}
 		case nil:
 			break
 		default:
