@@ -27,8 +27,8 @@ type Client interface {
 	Persist(d Document) error
 	PersistWithContext(d Document, ctx context.Context) error
 	GetCollection(d Document) (*mongo.Collection, error)
-	FindAll(d Document, filters bson.M) (*ResultCursor, error)
-	FindAllWithContext(d Document, filters bson.M, ctx context.Context) (*ResultCursor, error)
+	FindAll(d Document, filters bson.M, findOptions ...*FindOptions) (*ResultCursor, error)
+	FindAllWithContext(d Document, filters bson.M, ctx context.Context, findOptions ...*FindOptions) (*ResultCursor, error)
 	FindOne(d Document, filters bson.M) error
 	FindOneWithContext(d Document, filters bson.M, ctx context.Context) error
 	FindOneById(d Document, id string) error
@@ -40,6 +40,7 @@ type Client interface {
 	Delete(d Document) error
 	DeleteWithContext(d Document, ctx context.Context) error
 	Update(d Document, id string, input interface{}) error
+	UpdateWhere(d Document, filter bson.M, input interface{}) error
 	UpdateWithContext(d Document, id string, input interface{}, ctx context.Context) error
 	GenerateUUID() uuid.UUID
 	GetURI() string
@@ -50,7 +51,7 @@ type mongoClient struct {
 	uri      string
 }
 
-func (m *mongoClient) FindAll(d Document, filters bson.M) (*ResultCursor, error) {
+func (m *mongoClient) FindAll(d Document, filters bson.M, findOptions ...*FindOptions) (*ResultCursor, error) {
 	ctx, cancel := m.getContext()
 	defer cancel()
 
@@ -60,7 +61,27 @@ func (m *mongoClient) FindAll(d Document, filters bson.M) (*ResultCursor, error)
 		return nil, err
 	}
 
-	find, err := collection.Find(ctx, filters)
+	mongoOptions := options.FindOptions{}
+
+	if findOptions != nil && findOptions[0] != nil {
+		findOption := findOptions[0]
+
+		if findOption.Sort != nil {
+			bsonSort := bson.M{}
+			for _, sort := range findOption.Sort {
+				bsonSort[sort.SortField] = sort.Order
+			}
+			mongoOptions.Sort = bsonSort
+		}
+
+		if findOption.Pagination != nil {
+			mongoOptions.Limit = &findOption.Pagination.Limit
+			skip := findOption.Pagination.Page * findOption.Pagination.Limit
+			mongoOptions.Skip = &skip
+		}
+	}
+
+	find, err := collection.Find(ctx, filters, &mongoOptions)
 	if err != nil {
 		return nil, err
 	}
@@ -69,14 +90,35 @@ func (m *mongoClient) FindAll(d Document, filters bson.M) (*ResultCursor, error)
 
 }
 
-func (m *mongoClient) FindAllWithContext(d Document, filters bson.M, ctx context.Context) (*ResultCursor, error) {
+func (m *mongoClient) FindAllWithContext(d Document, filters bson.M, ctx context.Context, findOptions ...*FindOptions) (*ResultCursor, error) {
 	collection, err := m.GetCollection(d)
 
 	if err != nil {
 		return nil, err
 	}
 
-	find, err := collection.Find(ctx, filters)
+	mongoOptions := options.FindOptions{}
+
+	if findOptions != nil && findOptions[0] != nil {
+		findOption := findOptions[0]
+
+		if findOption.Sort != nil {
+			bsonSort := bson.M{}
+			for _, sort := range findOption.Sort {
+				bsonSort[sort.SortField] = sort.Order
+			}
+			mongoOptions.Sort = bsonSort
+		}
+
+		if findOption.Pagination != nil {
+			mongoOptions.Limit = &findOption.Pagination.Limit
+			skip := findOption.Pagination.Page * findOption.Pagination.Limit
+			mongoOptions.Skip = &skip
+		}
+	}
+
+	find, err := collection.Find(ctx, filters, &mongoOptions)
+
 	if err != nil {
 		return nil, err
 	}
@@ -405,6 +447,30 @@ func (m *mongoClient) Update(d Document, id string, input interface{}) error {
 	}
 
 	filter := bson.M{"_id": id}
+
+	updates := FlattenedMapFromInterface(input)
+	updates["updatedAt"] = time.Now()
+
+	_, err = collection.UpdateOne(ctx, filter, bson.D{
+		{Key: "$set", Value: updates},
+	})
+
+	return err
+}
+
+func (m *mongoClient) UpdateWhere(d Document, filter bson.M, input interface{}) error {
+	ctx, cancel := m.getContext()
+	defer cancel()
+
+	collection, err := m.GetCollection(d)
+
+	if err != nil {
+		return err
+	}
+
+	if collection == nil {
+		return errors.New(fmt.Sprintf("No collection found for document named %s", d.DocumentName()))
+	}
 
 	updates := FlattenedMapFromInterface(input)
 	updates["updatedAt"] = time.Now()

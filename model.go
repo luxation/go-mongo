@@ -19,6 +19,21 @@ type ConnectionOptions struct {
 	RetryWrites    bool
 }
 
+type FindOptions struct {
+	Sort       []SortOption
+	Pagination *PaginationOption
+}
+
+type SortOption struct {
+	SortField string
+	Order     int
+}
+
+type PaginationOption struct {
+	Limit int64
+	Page  int64
+}
+
 func (c *ConnectionOptions) generateParams() string {
 	var params []string
 
