@@ -2,6 +2,7 @@ package mongo
 
 import (
 	"github.com/stretchr/testify/assert"
+	"go.mongodb.org/mongo-driver/bson"
 	"testing"
 )
 
@@ -10,10 +11,12 @@ func TestFlattenedMapFromInterface(t *testing.T) {
 		Action string `json:"action"`
 	}
 	type dummy struct {
-		Name string   `json:"name"`
+		Name *string  `json:"name"`
 		Bar  bar      `json:"bar"`
 		Bars []string `json:"bars"`
 	}
+
+	dummyName := "dummy"
 
 	tests := []struct {
 		dummy       dummy
@@ -21,7 +24,7 @@ func TestFlattenedMapFromInterface(t *testing.T) {
 	}{
 		{
 			dummy: dummy{
-				Name: "dummy",
+				Name: &dummyName,
 				Bar: bar{
 					Action: "dumb",
 				},
@@ -41,13 +44,12 @@ func TestFlattenedMapFromInterface(t *testing.T) {
 			},
 			expectedRes: map[string]interface{}{
 				"bar.action": "dumb",
-				"bars.0":     "tata",
-				"bars.1":     "toto",
+				"bars":       []interface{}{"tata", "toto"},
 			},
 		},
 		{
 			dummy: dummy{
-				Name: "dummy",
+				Name: &dummyName,
 				Bar: bar{
 					Action: "dumb",
 				},
@@ -56,13 +58,18 @@ func TestFlattenedMapFromInterface(t *testing.T) {
 			expectedRes: map[string]interface{}{
 				"name":       "dummy",
 				"bar.action": "dumb",
-				"bars.0":     "tata",
-				"bars.1":     "toto",
+				"bars":       []interface{}{"tata", "toto"},
 			},
 		},
 	}
 
 	for _, test := range tests {
-		assert.Equal(t, FlattenedMapFromInterface(test.dummy), test.expectedRes)
+		assert.Equal(t, test.expectedRes, FlattenedMapFromInterface(test.dummy))
 	}
+}
+
+func TestFlattenedMapFromBson(t *testing.T) {
+	obj := bson.M{"test": "foo"}
+
+	assert.Equal(t, map[string]interface{}{"test": "foo"}, FlattenedMapFromInterface(obj))
 }

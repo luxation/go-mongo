@@ -38,6 +38,7 @@ type Client interface {
 	Replace(d Document) error
 	ReplaceWithContext(d Document, ctx context.Context) error
 	Delete(d Document) error
+	DeleteWhere(d Document, key, value string) error
 	DeleteWithContext(d Document, ctx context.Context) error
 	Update(d Document, id string, input interface{}) error
 	UpdateWhere(d Document, filter bson.M, input interface{}) error
@@ -392,6 +393,35 @@ func (m *mongoClient) Delete(d Document) error {
 	}
 
 	filter := bson.M{"_id": d.GetID()}
+
+	dr, err := collection.DeleteOne(ctx, filter)
+
+	if err != nil {
+		return err
+	}
+
+	if dr.DeletedCount != 1 {
+		return errors.New(fmt.Sprintf("Deleted %q elements", dr.DeletedCount))
+	}
+
+	return nil
+}
+
+func (m *mongoClient) DeleteWhere(d Document, key, value string) error {
+	ctx, cancel := m.getContext()
+	defer cancel()
+
+	collection, err := m.GetCollection(d)
+
+	if err != nil {
+		return err
+	}
+
+	if collection == nil {
+		return errors.New(fmt.Sprintf("No collection found for document named %s", d.DocumentName()))
+	}
+
+	filter := bson.M{key: value}
 
 	dr, err := collection.DeleteOne(ctx, filter)
 
