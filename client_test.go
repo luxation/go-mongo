@@ -1,9 +1,12 @@
 package mongo
 
 import (
+	"encoding/json"
+	"fmt"
 	"github.com/stretchr/testify/assert"
 	"os"
 	"testing"
+	"time"
 )
 
 type Foo struct {
@@ -161,4 +164,48 @@ func TestUpdate(t *testing.T) {
 	err := testClient.Update(&foo, existingUUID, foo)
 
 	assert.Nil(t, err)
+}
+
+func TestFindAllWithPagination(t *testing.T) {
+	assert.NotNil(t, testClient)
+
+	allIds := make([]string, 20)
+
+	for i := 0; i < 20; i++ {
+		foo := Foo{
+			Action: fmt.Sprintf("pagination %d", i+1),
+		}
+
+		err := testClient.Persist(&foo)
+
+		assert.Nil(t, err)
+
+		allIds[i] = foo.GetID()
+
+		time.Sleep(5 * time.Millisecond)
+	}
+
+	res, err := testClient.FindAll(&Foo{}, nil, &FindOptions{
+		Sort: []SortOption{
+			{
+				SortField: "createdAt",
+				Order:     OrderDESC,
+			},
+		},
+		Pagination: &PaginationOption{
+			Limit:  5,
+			LastID: "",
+		},
+	})
+
+	assert.Nil(t, err)
+
+	foos := make([]Foo, 0)
+
+	err = json.Unmarshal(res, &foos)
+
+	assert.Nil(t, err)
+
+	assert.Equal(t, 5, len(foos))
+	assert.Equal(t, allIds[len(allIds) - 1], foos[0].ID)
 }

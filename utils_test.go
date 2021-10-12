@@ -69,7 +69,7 @@ func TestFlattenedMapFromInterface(t *testing.T) {
 }
 
 func TestFlattenedMapFromBson(t *testing.T) {
-	obj := bson.M{"test": "foo"}
+	obj := bson.M{"test": "foo", "test2": nil}
 
-	assert.Equal(t, map[string]interface{}{"test": "foo"}, FlattenedMapFromInterface(obj))
+	assert.Equal(t, map[string]interface{}{"test": "foo", "test2": nil}, FlattenedMapFromInterface(obj))
 }
