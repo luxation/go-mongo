@@ -6,13 +6,6 @@ import (
 	"strings"
 )
 
-type OrderType int
-
-const (
-	OrderASC  OrderType = 1
-	OrderDESC OrderType = -1
-)
-
 type CredentialConfig struct {
 	Username string
 	Password string
@@ -33,12 +26,12 @@ type FindOptions struct {
 
 type SortOption struct {
 	SortField string
-	Order     OrderType
+	Order     int
 }
 
 type PaginationOption struct {
-	Limit  int64
-	LastID string
+	Limit int64
+	Page  int64
 }
 
 func (c *ConnectionOptions) generateParams() string {
