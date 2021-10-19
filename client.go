@@ -20,10 +20,7 @@ type ResultCursor struct {
 	*mongo.Cursor
 }
 
-type ResultDecoder struct {
-	Struct interface{}
-	Then   func() error
-}
+type ResultDecoder func(cursor ResultCursor) error
 
 type Client interface {
 	Connect() error
@@ -179,18 +176,7 @@ func (m *mongoClient) FindAll(d Document, filters bson.M, decoder ResultDecoder,
 	defer find.Close(ctx)
 
 	for find.Next(ctx) {
-		err = find.Decode(decoder.Struct)
-
-		if err != nil {
-			if m.ctx != nil {
-				m.ctx = nil
-			} else {
-				cancel()
-			}
-			return err
-		}
-
-		err = decoder.Then()
+		err = decoder(ResultCursor{Cursor: find})
 
 		if err != nil {
 			if m.ctx != nil {
