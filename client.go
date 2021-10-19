@@ -21,7 +21,7 @@ type ResultCursor struct {
 }
 
 type ResultDecoder struct {
-	Struct *interface{}
+	Struct interface{}
 	Then   func()
 }
 
