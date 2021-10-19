@@ -37,7 +37,7 @@ type SortOption struct {
 }
 
 type PaginationOption struct {
-	Limit  int64
+	Limit  *int64
 	LastID string
 }
 

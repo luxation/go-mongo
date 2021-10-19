@@ -139,7 +139,7 @@ func (m *mongoClient) FindAll(d Document, filters bson.M, decoder ResultDecoder,
 		}
 
 		if findOption.Pagination != nil {
-			mongoOptions.Limit = &findOption.Pagination.Limit
+			mongoOptions.Limit = findOption.Pagination.Limit
 
 			if findOption.Pagination.LastID != "" {
 				if filters == nil {
