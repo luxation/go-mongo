@@ -22,7 +22,7 @@ type ResultCursor struct {
 
 type ResultDecoder struct {
 	Struct interface{}
-	Then   func()
+	Then   func() error
 }
 
 type Client interface {
@@ -190,7 +190,16 @@ func (m *mongoClient) FindAll(d Document, filters bson.M, decoder ResultDecoder,
 			return err
 		}
 
-		decoder.Then()
+		err = decoder.Then()
+
+		if err != nil {
+			if m.ctx != nil {
+				m.ctx = nil
+			} else {
+				cancel()
+			}
+			return err
+		}
 	}
 
 	if m.ctx != nil {
