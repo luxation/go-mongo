@@ -4,6 +4,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"go.mongodb.org/mongo-driver/bson"
 	"testing"
+	"time"
 )
 
 func TestFlattenedMapFromInterface(t *testing.T) {
@@ -72,4 +73,37 @@ func TestFlattenedMapFromBson(t *testing.T) {
 	obj := bson.M{"test": "foo", "test2": nil}
 
 	assert.Equal(t, map[string]interface{}{"test": "foo", "test2": nil}, FlattenedMapFromInterface(obj))
+}
+
+type dummyDateObj struct {
+	BasicDocument    `bson:",inline"`
+	Start            time.Time
+	End              time.Time
+	DummyStupidField string
+}
+
+func (d dummyDateObj) DocumentName() string {
+	return "dummyDate"
+}
+
+func TestFlattenedMapFromDates(t *testing.T) {
+	client, _ := dummyConnect()
+
+	obj := dummyDateObj{
+		Start:            time.Now(),
+		End:              time.Now().Add(24 * time.Hour),
+		DummyStupidField: "pato",
+	}
+
+	client.Persist(&obj)
+
+	obj2 := dummyDateObj{
+		Start:            time.Now().Add(24 * time.Hour),
+		End:              time.Now().Add(72 * time.Hour),
+		DummyStupidField: "pata",
+	}
+
+	client.Update(&obj, obj.ID, obj2)
+
+	assert.NotNil(t, obj)
 }

@@ -3,7 +3,9 @@ package mongo
 import (
 	"encoding/json"
 	"github.com/iancoleman/strcase"
+	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"strings"
 )
 
 func FlattenedMapFromInterface(from interface{}) map[string]interface{} {
@@ -24,35 +26,53 @@ func FlattenedMapFromInterface(from interface{}) map[string]interface{} {
 	default:
 		resultFields := make(map[string]interface{})
 
-		marshaled, err := json.Marshal(from)
+		keys := make(map[string]interface{})
+
+		jsonMarshaled, err := json.Marshal(from)
 		if err != nil {
 			panic(err)
 		}
 
-		err = json.Unmarshal(marshaled, &jsonFields)
+		err = json.Unmarshal(jsonMarshaled, &keys)
 		if err != nil {
 			panic(err)
 		}
 
-		flattenNestMap("", jsonFields, resultFields)
+		kk := make(map[string]string)
+
+		for k, _ := range keys {
+			kk[strings.ToLower(k)] = strcase.ToLowerCamel(k)
+		}
+
+		marshaled, err := bson.Marshal(from)
+		if err != nil {
+			panic(err)
+		}
+
+		err = bson.Unmarshal(marshaled, &jsonFields)
+		if err != nil {
+			panic(err)
+		}
+
+		flattenNestMap("", jsonFields, resultFields, kk)
 
 		return resultFields
 	}
 }
 
-func flattenNestMap(prefix string, src map[string]interface{}, dest map[string]interface{}) {
+func flattenNestMap(prefix string, src map[string]interface{}, dest map[string]interface{}, keys map[string]string) {
 	if len(prefix) > 0 {
 		prefix += "."
 	}
 	for k, v := range src {
 		switch child := v.(type) {
 		case map[string]interface{}:
-			flattenNestMap(prefix+strcase.ToLowerCamel(k), child, dest)
+			flattenNestMap(prefix+keys[k], child, dest, keys)
 		case nil:
 			break
 		default:
 			if k != "id" && k != "_id" {
-				dest[prefix+strcase.ToLowerCamel(k)] = v
+				dest[prefix+keys[k]] = v
 			}
 		}
 	}
