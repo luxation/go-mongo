@@ -40,9 +40,7 @@ func FlattenedMapFromInterface(from interface{}) map[string]interface{} {
 
 		kk := make(map[string]string)
 
-		for k, _ := range keys {
-			kk[strings.ToLower(k)] = strcase.ToLowerCamel(k)
-		}
+		fillCamelCaseFields(keys, kk)
 
 		marshaled, err := bson.Marshal(from)
 		if err != nil {
@@ -57,6 +55,18 @@ func FlattenedMapFromInterface(from interface{}) map[string]interface{} {
 		flattenNestMap("", jsonFields, resultFields, kk)
 
 		return resultFields
+	}
+}
+
+func fillCamelCaseFields(keys map[string]interface{}, kk map[string]string) {
+	for k, v := range keys {
+		switch child := v.(type) {
+		case map[string]interface{}:
+			kk[strings.ToLower(k)] = strcase.ToLowerCamel(k)
+			fillCamelCaseFields(child, kk)
+		default:
+			kk[strings.ToLower(k)] = strcase.ToLowerCamel(k)
+		}
 	}
 }
 

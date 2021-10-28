@@ -1,6 +1,7 @@
 package mongo
 
 import (
+	"fmt"
 	"github.com/stretchr/testify/assert"
 	"go.mongodb.org/mongo-driver/bson"
 	"testing"
@@ -106,4 +107,70 @@ func TestFlattenedMapFromDates(t *testing.T) {
 	client.Update(&obj, obj.ID, obj2)
 
 	assert.NotNil(t, obj)
+}
+
+type User struct {
+	BasicDocument     `bson:",inline"`
+	FirstName         string           `json:"firstName" bson:"firstName"`
+	LastName          string           `json:"lastName" bson:"lastName"`
+	Email             string           `json:"email"`
+	ProfileCompletion int32            `json:"profileCompletion" bson:"profileCompletion"`
+	Info              UserInfo         `json:"info,omitempty"`
+	EmergencyContact  EmergencyContact `json:"emergencyContact,omitempty" bson:"emergencyContact"`
+}
+
+type UserInfo struct {
+	Picture       string   `json:"picture"`
+	Title         string   `json:"title"`
+	Address1      string   `json:"address1" bson:"address1"`
+	Address2      string   `json:"address2" bson:"address2"`
+	City          string   `json:"city"`
+	State         string   `json:"state"`
+	Zip           string   `json:"zip"`
+	Phone1        string   `json:"phone1" bson:"phone1"`
+	Phone2        string   `json:"phone2" bson:"phone2"`
+	ContactMethod []string `json:"contactMethod" bson:"contactMethod"`
+}
+
+type EmergencyContact struct {
+	FirstName    string `json:"firstName" bson:"firstName"`
+	LastName     string `json:"lastName" bson:"lastName"`
+	Relationship string `json:"relationship"`
+	Phone1       string `json:"phone1" bson:"phone1"`
+	Phone2       string `json:"phone2" bson:"phone2"`
+}
+
+func TestFlattenedMapOnUser(t *testing.T) {
+	userToUpdate := User{
+		BasicDocument:     BasicDocument{},
+		FirstName:         "Alex",
+		LastName:          "Khoury",
+		Email:             "alex@email.com",
+		ProfileCompletion: 3,
+		Info: UserInfo{
+			Picture:       "qwc",
+			Title:         "Mr",
+			Address1:      "as",
+			Address2:      "as",
+			City:          "as",
+			State:         "as",
+			Zip:           "12345",
+			Phone1:        "1111111111",
+			Phone2:        "1111111111",
+			ContactMethod: []string{"email", "sms"},
+		},
+		EmergencyContact: EmergencyContact{
+			FirstName:    "as",
+			LastName:     "as",
+			Relationship: "as",
+			Phone1:       "1111111111",
+			Phone2:       "1111111111",
+		},
+	}
+
+	res := FlattenedMapFromInterface(userToUpdate)
+
+	for k, v := range res {
+		fmt.Println(fmt.Sprintf("KEY %s: %s", k, v))
+	}
 }
