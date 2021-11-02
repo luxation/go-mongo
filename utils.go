@@ -75,15 +75,21 @@ func flattenNestMap(prefix string, src map[string]interface{}, dest map[string]i
 		prefix += "."
 	}
 	for k, v := range src {
+		if k == "id" || k == "_id" {
+			continue
+		}
+
+		if _, found := keys[strings.ToLower(k)]; !found {
+			continue
+		}
+
 		switch child := v.(type) {
 		case map[string]interface{}:
 			flattenNestMap(prefix+keys[strings.ToLower(k)], child, dest, keys)
 		case nil:
 			break
 		default:
-			if k != "id" && k != "_id" {
-				dest[prefix+keys[strings.ToLower(k)]] = v
-			}
+			dest[prefix+keys[strings.ToLower(k)]] = v
 		}
 	}
 }
