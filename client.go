@@ -39,6 +39,7 @@ type Client interface {
 	DeleteWhere(d Document, key, value string) error
 	Update(d Document, id string, input interface{}) error
 	UpdateWhere(d Document, filter bson.M, input interface{}) error
+	UpdateMany(d Document, filter bson.M, input interface{}) error
 	GenerateUUID() uuid.UUID
 	GetURI() string
 }
