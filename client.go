@@ -475,6 +475,40 @@ func (m *mongoClient) Update(d Document, id string, input interface{}) error {
 	return err
 }
 
+func (m *mongoClient) UpdateMany(d Document, filter bson.M, input interface{}) error {
+	ctx, cancel := m.getContext()
+
+	if m.ctx != nil {
+		ctx = *m.ctx
+		cancel()
+	}
+
+	collection, err := m.GetCollection(d)
+
+	if err != nil {
+		return err
+	}
+
+	if collection == nil {
+		return errors.New(fmt.Sprintf("No collection found for document named %s", d.DocumentName()))
+	}
+
+	updates := FlattenedMapFromInterface(input)
+	updates["updatedAt"] = time.Now()
+
+	_, err = collection.UpdateMany(ctx, filter, bson.D{
+		{Key: "$set", Value: updates},
+	})
+
+	if m.ctx != nil {
+		m.ctx = nil
+	} else {
+		cancel()
+	}
+
+	return err
+}
+
 func (m *mongoClient) UpdateWhere(d Document, filter bson.M, input interface{}) error {
 	ctx, cancel := m.getContext()
 
