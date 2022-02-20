@@ -22,6 +22,7 @@ type ResultCursor struct {
 
 type ResultDecoder func(cursor ResultCursor) error
 
+//go:generate mockgen -destination=mocks/client_mock.go -package=mongo . Client
 type Client interface {
 	Connect() error
 	Disconnect() error
