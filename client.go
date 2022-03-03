@@ -31,6 +31,7 @@ type Client interface {
 	Persist(d Document) error
 	GetCollectionByName(name string) (*mongo.Collection, error)
 	GetCollection(d Document) (*mongo.Collection, error)
+	Aggregate(d Document, pipeline bson.A, decoder ResultDecoder, aggregateOptions ...*options.AggregateOptions) error
 	FindAll(d Document, filters bson.M, decoder ResultDecoder, findOptions ...*FindOptions) error
 	FindOne(d Document, filters bson.M, findOptions ...*FindOptions) error
 	FindOneById(d Document, id string) error
@@ -111,6 +112,63 @@ func (m *mongoClient) GetCollection(d Document) (*mongo.Collection, error) {
 	}
 
 	return client.Database(m.database).Collection(d.DocumentName()), nil
+}
+
+func (m *mongoClient) Aggregate(d Document, pipeline bson.A, decoder ResultDecoder, opts ...*options.AggregateOptions) error {
+	ctx, cancel := m.getContext()
+
+	if m.ctx != nil {
+		ctx = *m.ctx
+		cancel()
+	}
+
+	collection, err := m.GetCollection(d)
+
+	if err != nil {
+		return err
+	}
+
+	ag, err := collection.Aggregate(ctx, pipeline, opts...)
+
+	if err != nil {
+		if m.ctx != nil {
+			m.ctx = nil
+		} else {
+			cancel()
+		}
+		return err
+	}
+
+	if err = ag.Err(); err != nil {
+		if m.ctx != nil {
+			m.ctx = nil
+		} else {
+			cancel()
+		}
+		return err
+	}
+
+	defer ag.Close(ctx)
+
+	for ag.Next(ctx) {
+		err = decoder(ResultCursor{Cursor: ag})
+
+		if err != nil {
+			if m.ctx != nil {
+				m.ctx = nil
+			} else {
+				cancel()
+			}
+			return err
+		}
+	}
+
+	if m.ctx != nil {
+		m.ctx = nil
+	} else {
+		cancel()
+	}
+	return nil
 }
 
 func (m *mongoClient) FindAll(d Document, filters bson.M, decoder ResultDecoder, findOptions ...*FindOptions) error {
