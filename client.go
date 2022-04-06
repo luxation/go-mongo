@@ -39,6 +39,7 @@ type Client interface {
 	Replace(d Document) error
 	Delete(d Document) error
 	DeleteWhere(d Document, key, value string) error
+	DeleteMany(d Document, filter bson.M) (int64, error)
 	Update(d Document, id string, input interface{}) error
 	UpdateWhere(d Document, filter bson.M, input interface{}) error
 	UpdateMany(d Document, filter bson.M, input interface{}) error
@@ -497,6 +498,39 @@ func (m *mongoClient) DeleteWhere(d Document, key, value string) error {
 	}
 
 	return nil
+}
+
+func (m *mongoClient) DeleteMany(d Document, filter bson.M) (int64, error) {
+	ctx, cancel := m.getContext()
+
+	if m.ctx != nil {
+		ctx = *m.ctx
+		cancel()
+	}
+
+	collection, err := m.GetCollection(d)
+
+	if err != nil {
+		return 0, err
+	}
+
+	if collection == nil {
+		return 0, errors.New(fmt.Sprintf("No collection found for document named %s", d.DocumentName()))
+	}
+
+	dr, err := collection.DeleteMany(ctx, filter)
+
+	if m.ctx != nil {
+		m.ctx = nil
+	} else {
+		cancel()
+	}
+
+	if err != nil {
+		return 0, err
+	}
+
+	return dr.DeletedCount, nil
 }
 
 func (m *mongoClient) Update(d Document, id string, input interface{}) error {
