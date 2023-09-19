@@ -1,4 +1,4 @@
-module github.com/m3talux/go-mongo/v2
+module github.com/luxation/go-mongo/v2
 
 go 1.16
 
