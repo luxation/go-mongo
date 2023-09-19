@@ -45,12 +45,21 @@ type Client interface {
 	UpdateMany(d Document, filter bson.M, input interface{}) error
 	GenerateUUID() uuid.UUID
 	GetURI() string
+	GetClient() (*mongo.Client, error)
 }
 
 type mongoClient struct {
 	database string
 	uri      string
 	ctx      *context.Context
+}
+
+func (m *mongoClient) GetClient() (*mongo.Client, error) {
+	if client == nil {
+		return nil, errors.New("MongoDB client was not initialized")
+	}
+
+	return client, nil
 }
 
 func (m *mongoClient) getContext() (context.Context, context.CancelFunc) {
@@ -588,6 +597,7 @@ func (m *mongoClient) UpdateMany(d Document, filter bson.M, input interface{}) e
 	}
 
 	updates := FlattenedMapFromInterface(input)
+
 	updates["updatedAt"] = time.Now()
 
 	_, err = collection.UpdateMany(ctx, filter, bson.D{
